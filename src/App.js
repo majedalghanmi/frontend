@@ -37,7 +37,7 @@ function Login({ setAuth }) {
         <input type="text" name="username" placeholder="اسم المستخدم" onChange={handleChange} style={inputStyle} required />
         <input type="password" name="password" placeholder="كلمة المرور" onChange={handleChange} style={inputStyle} required />
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button type="button" onClick={() => sendRequest('https://backend-wsx0.onrender.com/login', 'جاري الدخول...')} style={buttonStyle}>دخول</button>
+          <button type="button" onClick={() => sendRequest('https://backend-wsx0.onrender.com/login', 'جاري الدخول...')}>دخول</button>
           <button type="button" onClick={() => sendRequest('https://backend-wsx0.onrender.com/register', 'جاري الإنشاء...')} style={registerButtonStyle}>إنشاء حساب</button>
         </div>
       </form>
