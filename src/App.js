@@ -1,93 +1,122 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 
-// --- مكون صفحة تسجيل الدخول ---
-function Login({ setAuth }) {
+const API_URL = 'https://backend-wsx0.onrender.com';
+
+// --- صفحة تسجيل الدخول ---
+function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [status, setStatus] = useState('');
   const [isError, setIsError] = useState(false);
   const navigate = useNavigate();
 
+  // التحقق من امتلاء الحقول لتفعيل الزر
+  const isFormValid = formData.username.trim() !== '' && formData.password.trim() !== '';
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const sendRequest = async (url, loadingMessage) => {
-    setStatus(loadingMessage);
-    setIsError(false);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setStatus('جاري التحقق...');
     try {
-      const response = await axios.post(url, formData);
-      setStatus(response.data.message);
+      const res = await axios.post(`${API_URL}/login`, formData);
+      setStatus(res.data.message);
       setIsError(false);
-      // إذا كان الرابط هو تسجيل دخول ونجح، ننتقل لصفحة الدليل
-      if (url.includes('login')) {
-        setTimeout(() => navigate('/phonebook'), 1000); 
-      }
-    } catch (error) {
-      setStatus(error.response?.data?.message || 'حدث خطأ ما');
+      setTimeout(() => navigate('/phonebook'), 1000);
+    } catch (err) {
+      setStatus(err.response?.data?.message || 'فشل الدخول');
       setIsError(true);
     }
   };
 
   return (
     <div style={containerStyle}>
-      <h2>نظام إدارة المستخدمين</h2>
-      <form style={formStyle}>
-        <input type="text" name="username" placeholder="اسم المستخدم" onChange={handleChange} style={inputStyle} required />
-        <input type="password" name="password" placeholder="كلمة المرور" onChange={handleChange} style={inputStyle} required />
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button type="button" onClick={() => sendRequest('https://backend-wsx0.onrender.com/login', 'جاري الدخول...')}>دخول</button>
-          <button type="button" onClick={() => sendRequest('https://backend-wsx0.onrender.com/register', 'جاري الإنشاء...')} style={registerButtonStyle}>إنشاء حساب</button>
-        </div>
+      <h2>نظام الدخول</h2>
+      <form onSubmit={handleLogin} style={formStyle}>
+        <input type="text" name="username" placeholder="اسم المستخدم" onChange={handleChange} style={inputStyle} />
+        <input type="password" name="password" placeholder="كلمة المرور" onChange={handleChange} style={inputStyle} />
+        <button 
+          type="submit" 
+          disabled={!isFormValid} 
+          style={{...buttonStyle, backgroundColor: isFormValid ? '#646cff' : '#ccc', cursor: isFormValid ? 'pointer' : 'not-allowed'}}
+        >
+          دخول
+        </button>
       </form>
-      {status && <p style={{ color: isError ? 'red' : 'green', fontWeight: 'bold' }}>{status}</p>}
+      {status && <p style={{ color: isError ? 'red' : 'green' }}>{status}</p>}
     </div>
   );
 }
 
-// --- مكون صفحة دليل الهاتف ---
+// --- صفحة دليل الهاتف ---
 function PhoneBook() {
   const [contact, setContact] = useState({ name: '', phone: '' });
-  const [contactsList, setContactsList] = useState([]); // لتخزين الأسماء المعروضة
+  const [list, setList] = useState([]);
+  const [msg, setMsg] = useState('');
 
-  const handleAction = (actionType) => {
-    // ملاحظة: هنا يجب ربط هذه الأزرار بـ API الخاص بك لاحقاً
-    alert(`تم ضغط زر: ${actionType} لـ ${contact.name}`);
+  // 1. جلب البيانات (عرض الكل)
+  const fetchData = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/contacts`);
+      setList(res.data);
+    } catch (err) { setMsg('خطأ في جلب البيانات'); }
+  };
+
+  // 2. حفظ
+  const handleSave = async () => {
+    try {
+      await axios.post(`${API_URL}/contacts`, contact);
+      setMsg('تم الحفظ');
+      fetchData();
+    } catch (err) { setMsg('فشل الحفظ'); }
+  };
+
+  // 3. تعديل
+  const handleUpdate = async () => {
+    try {
+      await axios.put(`${API_URL}/contacts`, contact);
+      setMsg('تم التعديل');
+      fetchData();
+    } catch (err) { setMsg('فشل التعديل'); }
+  };
+
+  // 4. حذف
+  const handleDelete = async () => {
+    try {
+      await axios.delete(`${API_URL}/contacts/${contact.name}`);
+      setMsg('تم الحذف');
+      setContact({name: '', phone: ''});
+      fetchData();
+    } catch (err) { setMsg('فشل الحذف'); }
   };
 
   return (
     <div style={containerStyle}>
       <h2>📖 دليل الهاتف</h2>
       <div style={formStyle}>
-        <input 
-          type="text" 
-          placeholder="اسم الشخص" 
-          style={inputStyle} 
-          value={contact.name}
-          onChange={(e) => setContact({...contact, name: e.target.value})}
-        />
-        <input 
-          type="text" 
-          placeholder="رقم الجوال" 
-          style={inputStyle} 
-          value={contact.phone}
-          onChange={(e) => setContact({...contact, phone: e.target.value})}
-        />
+        <input type="text" placeholder="الاسم" style={inputStyle} value={contact.name} onChange={(e)=>setContact({...contact, name: e.target.value})} />
+        <input type="text" placeholder="رقم الجوال" style={inputStyle} value={contact.phone} onChange={(e)=>setContact({...contact, phone: e.target.value})} />
         
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
-          <button onClick={() => handleAction('حفظ')} style={{...buttonStyle, backgroundColor: '#27ae60'}}>حفظ</button>
-          <button onClick={() => handleAction('تعديل')} style={{...buttonStyle, backgroundColor: '#f39c12'}}>تعديل</button>
-          <button onClick={() => handleAction('حذف')} style={{...buttonStyle, backgroundColor: '#e74c3c'}}>حذف</button>
-          <button onClick={() => handleAction('عرض الكل')} style={{...buttonStyle, backgroundColor: '#3498db'}}>عرض الكل</button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <button onClick={handleSave} style={{...buttonStyle, backgroundColor: '#27ae60'}}>حفظ</button>
+          <button onClick={handleUpdate} style={{...buttonStyle, backgroundColor: '#f39c12'}}>تعديل</button>
+          <button onClick={handleDelete} style={{...buttonStyle, backgroundColor: '#e74c3c'}}>حذف</button>
+          <button onClick={fetchData} style={{...buttonStyle, backgroundColor: '#3498db'}}>عرض الكل</button>
         </div>
       </div>
-      <button onClick={() => window.location.href='/'} style={{marginTop: '20px', border: 'none', background: 'none', color: 'blue', cursor: 'pointer'}}>تسجيل الخروج</button>
+      <p>{msg}</p>
+      <ul>
+        {list.map((item, index) => (
+          <li key={index}>{item.name} - {item.phone}</li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-// --- المكون الرئيسي للتحكم بالمسارات ---
 export default function App() {
   return (
     <Router>
@@ -99,12 +128,11 @@ export default function App() {
   );
 }
 
-// --- التنسيقات ---
-const containerStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '50px', fontFamily: 'Arial, sans-serif' };
+// التنسيقات ثابتة كما طلبت
+const containerStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '50px', fontFamily: 'Arial' };
 const formStyle = { display: 'flex', flexDirection: 'column', width: '300px' };
 const inputStyle = { padding: '12px', margin: '8px 0', borderRadius: '5px', border: '1px solid #ccc', textAlign: 'right' };
-const buttonStyle = { padding: '12px', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '14px' };
-const registerButtonStyle = { ...buttonStyle, backgroundColor: '#2ecc71' };
+const buttonStyle = { padding: '12px', color: 'white', border: 'none', borderRadius: '5px', fontSize: '14px' };
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
