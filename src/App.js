@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+const cors = require('cors');
+app.use(cors());
 
 const API_URL = 'https://backend-wsx0.onrender.com';
 
