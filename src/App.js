@@ -7,8 +7,6 @@ app.use(cors());
 
 const API_URL = 'https://backend-wsx0.onrender.com';
 
-import App from './App';
-
 // --- 1. صفحة تسجيل الدخول وإنشاء الحساب ---
 function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
